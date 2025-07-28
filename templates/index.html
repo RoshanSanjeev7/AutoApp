@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoApply - Job Application Automation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .hero {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 3rem 0;
+        }
+        .feature-card {
+            transition: transform 0.2s;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+        }
+        .status-good { background-color: #d4edda; color: #155724; }
+        .status-bad { background-color: #f8d7da; color: #721c24; }
+        .loading {
+            display: none;
+        }
+        .job-info {
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #667eea;
+            border-color: #667eea;
+            color: white;
+        }
+        .progress-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .progress-step .step-number {
+            background-color: #667eea;
+            color: white;
+            border-radius: 50%;
+            width: 2rem;
+            height: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+        }
+        .progress-step.completed .step-number {
+            background-color: #28a745;
+        }
+        .progress-step.active .step-number {
+            background-color: #ffc107;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-robot"></i> AutoApply
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text" id="status-indicator">
+                    <span class="status-badge status-good" id="health-status">Checking...</span>
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero">
+        <div class="container text-center">
+            <h1 class="display-4 mb-3">
+                <i class="bi bi-robot"></i> AutoApply
+            </h1>
+            <p class="lead">AI-powered job application automation with customized resumes and cover letters</p>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Configuration Status -->
+        <div class="alert alert-info" id="config-status" style="display: none;">
+            <h5><i class="bi bi-gear"></i> Configuration Status</h5>
+            <div id="config-checks"></div>
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mb-4" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#single" type="button">
+                    <i class="bi bi-file-text"></i> Apply to Job
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button">
+                    <i class="bi bi-person-circle"></i> My Profile
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="sheets-tab" data-bs-toggle="tab" data-bs-target="#sheets" type="button">
+                    <i class="bi bi-table"></i> Google Sheets
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch" type="button">
+                    <i class="bi bi-files"></i> Batch Process
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="autonomous-tab" data-bs-toggle="tab" data-bs-target="#autonomous" type="button">
+                    <i class="bi bi-robot"></i> Autonomous Mode
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button">
+                    <i class="bi bi-graph-up"></i> Statistics
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="mainTabContent">
+            <!-- Single Job Tab -->
+            <div class="tab-pane fade show active" id="single" role="tabpanel">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-file-text"></i> Job Application</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="job-form">
+                                    <div class="mb-3">
+                                        <label for="job-text" class="form-label">Paste Job Description</label>
+                                        <textarea class="form-control" id="job-text" rows="10" 
+                                                placeholder="Paste the full job posting here..."></textarea>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-primary" id="parse-btn">
+                                            <i class="bi bi-search"></i> Parse Job Info
+                                        </button>
+                                        <button type="button" class="btn btn-success" id="apply-btn" disabled>
+                                            <i class="bi bi-send"></i> Generate Documents
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <!-- Loading States -->
+                                <div class="loading mt-3" id="parse-loading">
+                                    <div class="d-flex align-items-center">
+                                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                        Parsing job information...
+                                    </div>
+                                </div>
+
+                                <div class="loading mt-3" id="apply-loading">
+                                    <div class="d-flex align-items-center">
+                                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                        Generating documents...
+                                    </div>
+                                </div>
+
+                                <!-- Job Info Display -->
+                                <div class="job-info" id="job-info" style="display: none;">
+                                    <h6><i class="bi bi-info-circle"></i> Extracted Job Information</h6>
+                                    <div id="job-details"></div>
+                                </div>
+
+                                <!-- Results -->
+                                <div class="alert alert-success" id="success-alert" style="display: none;">
+                                    <h6><i class="bi bi-check-circle"></i> Success!</h6>
+                                    <div id="success-details"></div>
+                                    
+                                    <!-- Copy-paste sections -->
+                                    <div class="mt-4">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6><i class="bi bi-code-square"></i> LaTeX for Overleaf</h6>
+                                                <div class="position-relative">
+                                                    <textarea id="latex-output" class="form-control font-monospace" rows="8" readonly></textarea>
+                                                    <button class="btn btn-sm btn-outline-primary position-absolute top-0 end-0 m-2" onclick="copyToClipboard('latex-output')">
+                                                        <i class="bi bi-clipboard"></i> Copy
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6><i class="bi bi-file-text"></i> Cover Letter for Google Docs</h6>
+                                                <div class="position-relative">
+                                                    <textarea id="cover-letter-output" class="form-control" rows="8" readonly></textarea>
+                                                    <button class="btn btn-sm btn-outline-primary position-absolute top-0 end-0 m-2" onclick="copyToClipboard('cover-letter-output')">
+                                                        <i class="bi bi-clipboard"></i> Copy
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-danger" id="error-alert" style="display: none;">
+                                    <h6><i class="bi bi-exclamation-triangle"></i> Error</h6>
+                                    <div id="error-details"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="bi bi-list-ol"></i> Process Steps</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="progress-step" id="step-1">
+                                    <div class="step-number">1</div>
+                                    <div>Paste job description</div>
+                                </div>
+                                <div class="progress-step" id="step-2">
+                                    <div class="step-number">2</div>
+                                    <div>Parse job information</div>
+                                </div>
+                                <div class="progress-step" id="step-3">
+                                    <div class="step-number">3</div>
+                                    <div>Generate documents</div>
+                                </div>
+                                <div class="progress-step" id="step-4">
+                                    <div class="step-number">4</div>
+                                    <div>Download LaTeX files</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Management Tab -->
+            <div class="tab-pane fade" id="profile" role="tabpanel">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-person-circle"></i> My Profile & Resume</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="profile-form">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Basic Information</h6>
+                                            <div class="mb-3">
+                                                <label class="form-label">Full Name</label>
+                                                <input type="text" class="form-control" id="profile-name">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Email</label>
+                                                <input type="email" class="form-control" id="profile-email">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Phone</label>
+                                                <input type="text" class="form-control" id="profile-phone">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">LinkedIn URL</label>
+                                                <input type="url" class="form-control" id="profile-linkedin">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Professional Information</h6>
+                                            <div class="mb-3">
+                                                <label class="form-label">Current Role</label>
+                                                <input type="text" class="form-control" id="profile-role">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Years of Experience</label>
+                                                <input type="number" class="form-control" id="profile-experience">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Skills (comma-separated)</label>
+                                                <textarea class="form-control" id="profile-skills" rows="3"></textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label">Professional Summary</label>
+                                                <textarea class="form-control" id="profile-summary" rows="3"></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-primary" id="save-profile-btn">
+                                            <i class="bi bi-save"></i> Save Profile
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" id="load-profile-btn">
+                                            <i class="bi bi-arrow-clockwise"></i> Reload
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="bi bi-info-circle"></i> Profile Tips</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="small">
+                                    This information is used to customize your resumes and cover letters.
+                                </p>
+                                <ul class="small">
+                                    <li>Keep skills updated with current technologies</li>
+                                    <li>Write a compelling professional summary</li>
+                                    <li>Use keywords relevant to your field</li>
+                                    <li>Save changes before generating documents</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Google Sheets Export Tab -->
+            <div class="tab-pane fade" id="sheets" role="tabpanel">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-table"></i> Google Sheets Export</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Copy and paste this data into your Google Sheets application tracker:</p>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Headers (paste into first row)</label>
+                                    <div class="position-relative">
+                                        <textarea id="sheets-headers" class="form-control font-monospace" rows="2" readonly>Date	Company	Position	Location	Salary	Remote	Status	Job URL	Notes	Skills Required	Application Method</textarea>
+                                        <button class="btn btn-sm btn-outline-primary position-absolute top-0 end-0 m-2" onclick="copyToClipboard('sheets-headers')">
+                                            <i class="bi bi-clipboard"></i> Copy
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3" id="sheets-data-section" style="display: none;">
+                                    <label class="form-label">Latest Application Data</label>
+                                    <div class="position-relative">
+                                        <textarea id="sheets-data" class="form-control font-monospace" rows="3" readonly></textarea>
+                                        <button class="btn btn-sm btn-outline-primary position-absolute top-0 end-0 m-2" onclick="copyToClipboard('sheets-data')">
+                                            <i class="bi bi-clipboard"></i> Copy
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <h6><i class="bi bi-lightbulb"></i> How to Use</h6>
+                                    <ol>
+                                        <li>Create a new Google Sheet</li>
+                                        <li>Copy and paste the headers into the first row</li>
+                                        <li>After each job application, copy the data from here</li>
+                                        <li>Paste it into a new row in your sheet</li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="bi bi-table"></i> Tracking Benefits</h6>
+                            </div>
+                            <div class="card-body">
+                                <ul class="small">
+                                    <li>Track all your applications in one place</li>
+                                    <li>Monitor response rates and patterns</li>
+                                    <li>Follow up on pending applications</li>
+                                    <li>Analyze which types of jobs respond</li>
+                                    <li>Share progress with career counselors</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Autonomous Mode Tab -->
+            <div class="tab-pane fade" id="autonomous" role="tabpanel">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-robot"></i> Autonomous Job Application System</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-warning">
+                                    <h6><i class="bi bi-exclamation-triangle"></i> Important Safety Notice</h6>
+                                    <p class="mb-0">
+                                        The autonomous system will automatically search for jobs, generate applications, and submit them on your behalf. 
+                                        Always review settings carefully and start with conservative limits.
+                                    </p>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>System Status</h6>
+                                        <div id="autonomous-status" class="mb-3">
+                                            <span class="badge bg-secondary" id="status-badge">Checking...</span>
+                                            <div class="mt-2">
+                                                <small class="text-muted" id="status-details">Loading system status...</small>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex gap-2 mb-3">
+                                            <button type="button" class="btn btn-success" id="start-autonomous-btn" disabled>
+                                                <i class="bi bi-play-circle"></i> Start Autonomous Mode
+                                            </button>
+                                            <button type="button" class="btn btn-danger" id="stop-autonomous-btn" disabled>
+                                                <i class="bi bi-stop-circle"></i> Stop Autonomous Mode
+                                            </button>
+                                        </div>
+                                        
+                                        <button type="button" class="btn btn-primary" id="manual-cycle-btn">
+                                            <i class="bi bi-arrow-clockwise"></i> Run Manual Cycle
+                                        </button>
+                                    </div>
+                                    
+                                    <div class="col-md-6">
+                                        <h6>Configuration</h6>
+                                        <div class="mb-3">
+                                            <label class="form-label">Daily Application Limit</label>
+                                            <input type="number" class="form-control" id="daily-limit" value="5" min="1" max="20">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Quality Threshold</label>
+                                            <input type="range" class="form-range" id="quality-threshold" min="0.5" max="1.0" step="0.1" value="0.8">
+                                            <small class="text-muted">Only apply to jobs scoring <span id="threshold-value">0.8</span> or higher</small>
+                                        </div>
+                                        <div class="form-check mb-3">
+                                            <input class="form-check-input" type="checkbox" id="require-approval" checked>
+                                            <label class="form-check-label" for="require-approval">
+                                                Require human approval before submitting
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Agent Performance -->
+                                <div class="mt-4">
+                                    <h6>Agent Performance</h6>
+                                    <div id="agent-performance">
+                                        <div class="text-center">
+                                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                                            <span class="ms-2">Loading performance data...</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Recent Activities -->
+                                <div class="mt-4">
+                                    <h6>Recent Activities</h6>
+                                    <div id="recent-activities">
+                                        <p class="text-muted">No recent activities</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="bi bi-info-circle"></i> How Autonomous Mode Works</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <h6 class="text-primary">🔍 Job Discovery</h6>
+                                    <small>Automatically searches LinkedIn, Indeed, and other job boards based on your preferences</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6 class="text-primary">🧠 AI Filtering</h6>
+                                    <small>Uses AI to score jobs based on your skills, experience, and success patterns</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6 class="text-primary">📄 Document Generation</h6>
+                                    <small>Creates customized resumes and cover letters for each application</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6 class="text-primary">🚀 Application Submission</h6>
+                                    <small>Automatically fills out and submits applications (with your approval)</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6 class="text-primary">📈 Learning & Optimization</h6>
+                                    <small>Learns from responses to improve future applications</small>
+                                </div>
+                                
+                                <div class="alert alert-info mt-3">
+                                    <small>
+                                        <strong>Safety First:</strong> The system starts with conservative settings and requires approval for submissions. You maintain full control.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batch Process Tab -->
+            <div class="tab-pane fade" id="batch" role="tabpanel">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-files"></i> Batch Process Jobs</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="batch-file" class="form-label">Upload Job File</label>
+                                    <input type="file" class="form-control" id="batch-file" 
+                                           accept=".json,.csv,.txt">
+                                    <div class="form-text">
+                                        Supported formats: JSON, CSV, TXT
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex gap-2 mb-3">
+                                    <button type="button" class="btn btn-primary" id="upload-btn" disabled>
+                                        <i class="bi bi-upload"></i> Upload File
+                                    </button>
+                                    <button type="button" class="btn btn-success" id="process-btn" disabled>
+                                        <i class="bi bi-gear"></i> Process Jobs
+                                    </button>
+                                </div>
+
+                                <div class="mb-3">
+                                    <h6>Sample Files</h6>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                                onclick="downloadSample('json')">
+                                            <i class="bi bi-download"></i> JSON Sample
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                                onclick="downloadSample('csv')">
+                                            <i class="bi bi-download"></i> CSV Sample
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                                onclick="downloadSample('txt')">
+                                            <i class="bi bi-download"></i> TXT Sample
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Batch Results -->
+                                <div class="loading" id="batch-loading">
+                                    <div class="d-flex align-items-center">
+                                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                        Processing batch jobs...
+                                    </div>
+                                </div>
+
+                                <div id="batch-results" style="display: none;">
+                                    <h6><i class="bi bi-clipboard-data"></i> Processing Results</h6>
+                                    <div id="batch-details"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6><i class="bi bi-info-circle"></i> Batch Processing</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="small">
+                                    Upload a file containing multiple job postings to process them all at once.
+                                </p>
+                                <ul class="small">
+                                    <li>Generate custom resumes for each job</li>
+                                    <li>Create personalized cover letters</li>
+                                    <li>Track all applications in Google Sheets</li>
+                                    <li>Export data for other tools</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics Tab -->
+            <div class="tab-pane fade" id="stats" role="tabpanel">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-graph-up"></i> Application Statistics</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="stats-content">
+                                    <div class="text-center">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-2">Loading statistics...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5><i class="bi bi-clock-history"></i> Recent Applications</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="recent-apps">
+                                    <div class="text-center">
+                                        <div class="spinner-border" role="status">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="mt-2">Loading applications...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
